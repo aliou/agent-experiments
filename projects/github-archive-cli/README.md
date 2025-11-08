@@ -8,7 +8,9 @@ An interactive CLI tool for managing GitHub repository archival with two distinc
 ## Features
 
 - 🔐 Secure GitHub authentication (supports `GITHUB_TOKEN` environment variable)
-- 🎯 Interactive prompts for safe operations
+- 📋 Interactive repository selection - choose from your repositories or enter manually
+- 🎯 CLI argument support - pass repository as argument for automation
+- 🎨 Interactive prompts for safe operations
 - 📦 Mirror cloning to preserve all branches, tags, and history
 - ⚠️ Multiple confirmation steps for destructive operations
 - 🧹 Automatic cleanup of temporary files
@@ -35,27 +37,51 @@ pnpm build
 
 ### Archive Mode
 
-Mark a GitHub repository as archived (read-only):
+Mark a GitHub repository as archived (read-only).
+
+**Interactive mode** (choose from your repositories or enter manually):
 
 ```bash
 pnpm start archive
 ```
 
-The CLI will prompt you for:
-- Repository identifier (owner/repo or GitHub URL)
-- GitHub authentication token
-- Confirmation of the archive operation
+**With CLI argument** (for automation):
 
-**Example:**
+```bash
+pnpm start archive owner/repo
+# or
+pnpm start archive https://github.com/owner/repo
+```
+
+The CLI will:
+1. Authenticate with GitHub
+2. Let you select a repository (or use the provided argument)
+3. Verify access
+4. Confirm the archive operation
+5. Archive the repository
+
+**Example (Interactive Selection):**
 ```
 $ pnpm start archive
 🗄️  Archive Mode: Mark GitHub repository as archived
 
-? Enter repository (owner/repo or GitHub URL): octocat/Hello-World
-📦 Repository: octocat/Hello-World
-
 🔐 Authenticating with GitHub...
 ? Found GITHUB_TOKEN in environment. Use it? Yes
+
+? How would you like to select a repository?
+❯ Choose from my repositories
+  Enter repository manually
+
+🔍 Fetching your repositories...
+✓ Found 42 repositories
+
+? Select a repository: (Use arrow keys)
+❯ octocat/Hello-World
+  octocat/Spoon-Knife [ARCHIVED]
+  octocat/test-repo [PRIVATE]
+  ...
+
+📦 Repository: octocat/Hello-World
 
 🔍 Verifying repository access...
 ? Are you sure you want to archive octocat/Hello-World? Yes
@@ -66,32 +92,59 @@ $ pnpm start archive
 Note: Archived repositories are read-only. Users can still view and fork the repository.
 ```
 
+**Example (CLI Argument):**
+```bash
+$ pnpm start archive octocat/Hello-World
+🗄️  Archive Mode: Mark GitHub repository as archived
+
+🔐 Authenticating with GitHub...
+📦 Repository: octocat/Hello-World
+
+🔍 Verifying repository access...
+? Are you sure you want to archive octocat/Hello-World? Yes
+
+📦 Archiving repository...
+✅ Successfully archived octocat/Hello-World!
+```
+
 ### Migrate Mode
 
-Move a repository to another git server and optionally delete from GitHub:
+Move a repository to another git server and optionally delete from GitHub.
+
+**Interactive mode** (choose from your repositories or enter manually):
 
 ```bash
 pnpm start migrate
 ```
 
-The CLI will prompt you for:
-- GitHub repository identifier (owner/repo or URL)
-- Destination git repository URL
-- Whether to delete from GitHub after migration
-- Multiple confirmations for safety
+**With CLI argument** (for automation):
+
+```bash
+pnpm start migrate owner/repo
+# or
+pnpm start migrate https://github.com/owner/repo
+```
+
+The CLI will:
+1. Authenticate with GitHub
+2. Let you select a repository (or use the provided argument)
+3. Prompt for destination git URL
+4. Ask whether to delete from GitHub after migration
+5. Verify access and show migration summary
+6. Perform mirror clone and push
+7. Optionally delete from GitHub
 
 **Example:**
 ```
-$ pnpm start migrate
+$ pnpm start migrate myuser/old-project
 🚚 Migrate Mode: Move repository to another git server and optionally delete from GitHub
 
-? Enter GitHub repository (owner/repo or URL): myuser/old-project
+🔐 Authenticating with GitHub...
 📦 Repository: myuser/old-project
 
 ? Enter destination git repository URL: https://git.example.com/newuser/old-project.git
 ? Delete repository from GitHub after successful migration? (WARNING: This cannot be undone) Yes
 
-🔐 Authenticating with GitHub...
 🔍 Verifying repository access...
 
 📋 Migration Summary:

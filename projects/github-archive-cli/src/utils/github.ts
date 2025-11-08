@@ -91,3 +91,95 @@ export async function verifyRepoAccess(octokit: Octokit, repo: GitHubRepo): Prom
     return false;
   }
 }
+
+/**
+ * List user's repositories and let them select one
+ */
+export async function selectRepositoryFromList(octokit: Octokit): Promise<GitHubRepo> {
+  console.log('🔍 Fetching your repositories...');
+
+  // Fetch repositories (paginated)
+  const repos = await octokit.paginate(octokit.repos.listForAuthenticatedUser, {
+    sort: 'updated',
+    per_page: 100,
+    affiliation: 'owner,collaborator,organization_member',
+  });
+
+  if (repos.length === 0) {
+    throw new Error('No repositories found for your account.');
+  }
+
+  console.log(`\n✓ Found ${repos.length} repositories\n`);
+
+  // Format choices for inquirer
+  const choices = repos.map((repo) => ({
+    name: `${repo.full_name}${repo.archived ? ' [ARCHIVED]' : ''}${repo.private ? ' [PRIVATE]' : ''}`,
+    value: repo.full_name,
+    short: repo.full_name,
+  }));
+
+  const { selectedRepo } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'selectedRepo',
+      message: 'Select a repository:',
+      choices,
+      pageSize: 15,
+      loop: false,
+    },
+  ]);
+
+  return parseRepoIdentifier(selectedRepo);
+}
+
+/**
+ * Get repository either from provided identifier or by interactive selection
+ */
+export async function getRepository(
+  octokit: Octokit,
+  providedIdentifier?: string,
+): Promise<GitHubRepo> {
+  if (providedIdentifier) {
+    // Use provided repository identifier
+    return parseRepoIdentifier(providedIdentifier);
+  }
+
+  // Ask user how they want to select the repository
+  const { selectionMethod } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'selectionMethod',
+      message: 'How would you like to select a repository?',
+      choices: [
+        { name: 'Choose from my repositories', value: 'list' },
+        { name: 'Enter repository manually', value: 'manual' },
+      ],
+    },
+  ]);
+
+  if (selectionMethod === 'list') {
+    return await selectRepositoryFromList(octokit);
+  }
+
+  // Manual entry
+  const { repoIdentifier } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'repoIdentifier',
+      message: 'Enter repository (owner/repo or GitHub URL):',
+      validate: (input: string) => {
+        if (!input || input.trim().length === 0) {
+          return 'Repository identifier is required';
+        }
+        try {
+          parseRepoIdentifier(input);
+          return true;
+        } catch (_error) {
+          return 'Invalid format. Use "owner/repo" or GitHub URL';
+        }
+      },
+    },
+  ]);
+
+  return parseRepoIdentifier(repoIdentifier);
+}

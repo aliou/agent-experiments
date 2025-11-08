@@ -14,15 +14,17 @@ program
 program
   .command('archive')
   .description('Mark a GitHub repository as archived')
-  .action(async () => {
-    await archiveMode();
+  .argument('[repository]', 'Repository identifier (owner/repo or GitHub URL)')
+  .action(async (repository?: string) => {
+    await archiveMode(repository);
   });
 
 program
   .command('migrate')
   .description('Move repository to another git server and optionally delete from GitHub')
-  .action(async () => {
-    await migrateMode();
+  .argument('[repository]', 'Repository identifier (owner/repo or GitHub URL)')
+  .action(async (repository?: string) => {
+    await migrateMode(repository);
   });
 
 program.parse(process.argv);

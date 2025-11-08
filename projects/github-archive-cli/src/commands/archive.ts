@@ -1,36 +1,17 @@
 import inquirer from 'inquirer';
-import { createOctokit, parseRepoIdentifier, verifyRepoAccess } from '../utils/github.js';
+import { createOctokit, getRepository, verifyRepoAccess } from '../utils/github.js';
 
-export async function archiveMode(): Promise<void> {
+export async function archiveMode(providedRepo?: string): Promise<void> {
   console.log('\n🗄️  Archive Mode: Mark GitHub repository as archived\n');
 
   try {
-    // Get repository identifier
-    const { repoIdentifier } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'repoIdentifier',
-        message: 'Enter repository (owner/repo or GitHub URL):',
-        validate: (input: string) => {
-          if (!input || input.trim().length === 0) {
-            return 'Repository identifier is required';
-          }
-          try {
-            parseRepoIdentifier(input);
-            return true;
-          } catch (_error) {
-            return 'Invalid format. Use "owner/repo" or GitHub URL';
-          }
-        },
-      },
-    ]);
-
-    const repo = parseRepoIdentifier(repoIdentifier);
-    console.log(`\n📦 Repository: ${repo.owner}/${repo.repo}`);
-
     // Authenticate with GitHub
-    console.log('\n🔐 Authenticating with GitHub...');
+    console.log('🔐 Authenticating with GitHub...');
     const octokit = await createOctokit();
+
+    // Get repository (from CLI arg or interactive selection)
+    const repo = await getRepository(octokit, providedRepo);
+    console.log(`\n📦 Repository: ${repo.owner}/${repo.repo}`);
 
     // Verify repository access
     console.log('🔍 Verifying repository access...');

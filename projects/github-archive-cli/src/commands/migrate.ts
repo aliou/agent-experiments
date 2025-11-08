@@ -3,35 +3,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import inquirer from 'inquirer';
 import { simpleGit } from 'simple-git';
-import { createOctokit, parseRepoIdentifier, verifyRepoAccess } from '../utils/github.js';
+import { createOctokit, getRepository, verifyRepoAccess } from '../utils/github.js';
 
-export async function migrateMode(): Promise<void> {
+export async function migrateMode(providedRepo?: string): Promise<void> {
   console.log(
     '\n🚚 Migrate Mode: Move repository to another git server and optionally delete from GitHub\n',
   );
 
   try {
-    // Get repository identifier
-    const { repoIdentifier } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'repoIdentifier',
-        message: 'Enter GitHub repository (owner/repo or URL):',
-        validate: (input: string) => {
-          if (!input || input.trim().length === 0) {
-            return 'Repository identifier is required';
-          }
-          try {
-            parseRepoIdentifier(input);
-            return true;
-          } catch (_error) {
-            return 'Invalid format. Use "owner/repo" or GitHub URL';
-          }
-        },
-      },
-    ]);
+    // Authenticate with GitHub
+    console.log('🔐 Authenticating with GitHub...');
+    const octokit = await createOctokit();
 
-    const repo = parseRepoIdentifier(repoIdentifier);
+    // Get repository (from CLI arg or interactive selection)
+    const repo = await getRepository(octokit, providedRepo);
     console.log(`\n📦 Repository: ${repo.owner}/${repo.repo}`);
 
     // Get destination git URL
@@ -64,12 +49,8 @@ export async function migrateMode(): Promise<void> {
       },
     ]);
 
-    // Authenticate with GitHub
-    console.log('\n🔐 Authenticating with GitHub...');
-    const octokit = await createOctokit();
-
     // Verify repository access
-    console.log('🔍 Verifying repository access...');
+    console.log('\n🔍 Verifying repository access...');
     const hasAccess = await verifyRepoAccess(octokit, repo);
 
     if (!hasAccess) {
