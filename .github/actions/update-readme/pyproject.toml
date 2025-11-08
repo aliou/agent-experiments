@@ -1,0 +1,10 @@
+[project]
+name = "update-readme"
+version = "0.1.0"
+description = "GitHub action to auto-update README using cogapp and LLM"
+requires-python = ">=3.11"
+dependencies = [
+    "cogapp>=3.4.1",
+    "llm>=0.19.0",
+    "llm-github-models>=0.2.0",
+]

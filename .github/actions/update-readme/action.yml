@@ -1,0 +1,32 @@
+name: 'Update README'
+description: 'Auto-generates README using cogapp and LLM summaries'
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: nix-shell --run "cd ${{ github.action_path }} && uv sync"
+
+    - name: Generate project summaries
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        for dir in projects/*/; do
+          if [ ! -f "${dir}_summary.md" ] && [ -f "${dir}README.md" ]; then
+            echo "Generating summary for ${dir}..."
+            summary=$(nix-shell --run "${{ github.action_path }}/.venv/bin/llm -m github/gpt-4.1 -s \
+              'Summarize this research project concisely. Write just 1 paragraph (2-3 sentences) describing what it does, what technologies it uses, and what problem it solves.'" \
+              < "${dir}README.md")
+            echo "$summary" > "${dir}_summary.md"
+          fi
+        done
+
+    - name: Run cogapp
+      shell: bash
+      run: nix-shell --run "${{ github.action_path }}/.venv/bin/cog -r README.md"
