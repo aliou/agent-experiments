@@ -9,6 +9,7 @@ An interactive CLI tool for managing GitHub repository archival with two distinc
 
 - 🔐 Secure GitHub authentication (supports `GITHUB_TOKEN` environment variable)
 - 📋 Interactive repository selection - choose from your repositories or enter manually
+- 🏢 Organization support - select repositories from your personal account or any organization
 - 🎯 CLI argument support - pass repository as argument for automation
 - 🎨 Interactive prompts for safe operations
 - 📦 Mirror cloning to preserve all branches, tags, and history
@@ -72,7 +73,15 @@ $ pnpm start archive
 ❯ Choose from my repositories
   Enter repository manually
 
-🔍 Fetching your repositories...
+🔍 Checking for organizations...
+✓ Found 2 organization(s)
+
+? Select repository owner: (Use arrow keys)
+❯ Your personal repositories
+  acme-corp (Organization)
+  github (Organization)
+
+🔍 Fetching repositories...
 ✓ Found 42 repositories
 
 ? Select a repository: (Use arrow keys)
@@ -188,8 +197,16 @@ The CLI supports GitHub authentication in two ways:
 
 2. **Interactive Prompt**: If no environment variable is set, the CLI will securely prompt for your token
 
-### Creating a Personal Access Token
+### Getting a GitHub Token
 
+**Quick method** (if you have GitHub CLI installed):
+```bash
+# Get your current GitHub CLI token
+export GITHUB_TOKEN=$(gh auth token)
+pnpm start archive
+```
+
+**Manual method** (create a new Personal Access Token):
 1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
 2. Click "Generate new token (classic)"
 3. Select scopes:

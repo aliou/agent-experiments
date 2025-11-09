@@ -96,17 +96,73 @@ export async function verifyRepoAccess(octokit: Octokit, repo: GitHubRepo): Prom
  * List user's repositories and let them select one
  */
 export async function selectRepositoryFromList(octokit: Octokit): Promise<GitHubRepo> {
-  console.log('🔍 Fetching your repositories...');
-
-  // Fetch repositories (paginated)
-  const repos = await octokit.paginate(octokit.repos.listForAuthenticatedUser, {
-    sort: 'updated',
+  // Fetch user's organizations
+  console.log('🔍 Checking for organizations...');
+  const orgs = await octokit.paginate(octokit.orgs.listForAuthenticatedUser, {
     per_page: 100,
-    affiliation: 'owner,collaborator,organization_member',
   });
 
+  let ownerFilter: string;
+
+  // If user has organizations, let them choose
+  if (orgs.length > 0) {
+    console.log(`\n✓ Found ${orgs.length} organization(s)\n`);
+
+    const ownerChoices = [
+      { name: 'Your personal repositories', value: 'user' },
+      ...orgs.map((org) => ({
+        name: `${org.login} (Organization)`,
+        value: org.login,
+      })),
+    ];
+
+    const { owner } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'owner',
+        message: 'Select repository owner:',
+        choices: ownerChoices,
+        pageSize: 15,
+        loop: false,
+      },
+    ]);
+
+    ownerFilter = owner;
+  } else {
+    // No organizations, use user's repos
+    ownerFilter = 'user';
+  }
+
+  // Fetch repositories based on selection
+  console.log('\n🔍 Fetching repositories...');
+
+  let repos: Array<{
+    full_name: string;
+    archived?: boolean;
+    private?: boolean;
+  }>;
+
+  if (ownerFilter === 'user') {
+    // Fetch user's personal repositories
+    const { data: userData } = await octokit.users.getAuthenticated();
+    repos = await octokit.paginate(octokit.repos.listForUser, {
+      username: userData.login,
+      sort: 'updated',
+      per_page: 100,
+    });
+  } else {
+    // Fetch organization repositories
+    repos = await octokit.paginate(octokit.repos.listForOrg, {
+      org: ownerFilter,
+      sort: 'updated',
+      per_page: 100,
+    });
+  }
+
   if (repos.length === 0) {
-    throw new Error('No repositories found for your account.');
+    throw new Error(
+      `No repositories found for ${ownerFilter === 'user' ? 'your account' : ownerFilter}.`,
+    );
   }
 
   console.log(`\n✓ Found ${repos.length} repositories\n`);
