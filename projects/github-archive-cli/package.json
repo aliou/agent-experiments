@@ -1,0 +1,25 @@
+{
+  "name": "github-archive-cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive CLI for archiving GitHub repositories",
+  "bin": {
+    "gh-archive": "./dist/index.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "tsc && node dist/index.js"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.2",
+    "commander": "^12.1.0",
+    "inquirer": "^12.4.0",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/inquirer": "^9.0.7"
+  }
+}
